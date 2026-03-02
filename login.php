@@ -69,6 +69,10 @@
 				var data = new FormData();
 				data.append("login", _login);
 				data.append("password", _password);
+
+				fetchJWT();
+
+				console.log(localStorage);
 				
 				// AJAX запрос
 				$.ajax({
@@ -90,7 +94,7 @@
 							alert("Логин или пароль не верный.");
 						} else {
 							localStorage.setItem("token", _data);
-							location.reload();
+							// location.reload();
 							loading.style.display = "none";
 							button.className = "button";
 						}
@@ -116,6 +120,74 @@
 					}
 				}
 			}
+
+			function fetchJWT() {
+    var _login = document.getElementsByName("_login")[0].value;
+    var _password = document.getElementsByName("_password")[0].value;
+
+    console.log("Отправка запроса с логином:", _login);
+
+    var data = new FormData();
+    data.append("login", _login);
+    data.append("password", _password);
+    
+    $.ajax({
+        url: 'auth.permaviat.ru',
+        type: 'POST',
+        data: data,
+        cache: false,
+        processData: false,
+        contentType: false,
+        beforeSend: function(xhr) {
+            // Отправляем Basic Auth с теми же логином и паролем
+            var token = _login + ":" + _password;
+            var hash = btoa(token);
+            xhr.setRequestHeader("Authorization", "Basic " + hash);
+            console.log("Basic Auth отправлен");
+        },
+        success: function(response, textStatus, xhr) {
+            
+            // Проверяем, что ответ не пустой
+            if (xhr.getResponseHeader("token") === "") {
+                alert("Логин или пароль не верный.");
+                return;
+            }
+            
+            // Если ответ пришел как строка (JWT токен)
+            if (response === "" || response === null || response === undefined) {
+                // Проверяем, не является ли ответ HTML ошибкой
+                if (response.includes("<br") || response.includes("<b>Warning")) {
+                    console.error("Сервер вернул HTML ошибку:", response);
+                    alert("Ошибка на сервере. Проверьте консоль.");
+                    return;
+                }
+                
+                // Сохраняем токен
+                localStorage.setItem("JWT", xhr.getResponseHeader("token"));
+                console.log("JWT токен сохранен:", xhr.getResponseHeader("token"));
+                alert("Авторизация успешна!");
+                
+                // Перенаправление или обновление страницы
+                // window.location.href = "dashboard.html";
+            } else {
+                console.error("Неожиданный формат ответа:", response);
+                alert("Ошибка авторизации");
+            }
+        },
+        error: function(xhr, status, error) {
+            console.log('Ошибка AJAX:');
+            console.log('Статус:', status);
+            console.log('HTTP статус:', xhr.status);
+            console.log('Ответ:', xhr.responseText);
+            
+            if (xhr.status === 401) {
+                alert("Логин или пароль не верный.");
+            } else {
+                alert("Ошибка соединения с сервером (код: " + xhr.status + ")");
+            }
+        }
+    });
+}
 			
 		</script>
 	</body>
