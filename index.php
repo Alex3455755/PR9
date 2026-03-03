@@ -1,6 +1,17 @@
 <?php
-	session_start();
 	include("./settings/connect_datebase.php");
+	include("ajax/check_token.php");
+
+	$isAuth = false;
+	$userId = null;
+
+	if(isset($_COOKIE['token'])) {
+	    $data = verifyJWT($_COOKIE['JWT']);
+	    if($data) {
+	        $isAuth = true;
+	        $userId = $data['userId'];
+	    }
+	}
 ?>
 <!DOCTYPE HTML>
 <html>

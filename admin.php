@@ -1,18 +1,24 @@
 <?php
-	session_start();
-	include("./settings/connect_datebase.php");
-	
-	if (isset($_SESSION['user'])) {
-		if($_SESSION['user'] != -1) {
-			$user_query = $mysqli->query("SELECT * FROM `users` WHERE `id` = ".$_SESSION['user']); // проверяем
-			while($user_read = $user_query->fetch_row()) {
-				if($user_read[3] == 0) header("Location: index.php");
-			}
-		} else header("Location: login.php");
- 	} else {
-		header("Location: login.php");
-		echo "Пользователя не существует";
+	include("ajax/check_token.php");
+
+	if(!isset($_COOKIE['JWT'])) {
+	    header("Location: login.php");
+	    exit;
 	}
+
+	$data = verifyJWT($_COOKIE['JWT']);
+
+	if(!$data) {
+	    header("Location: login.php");
+	    exit;
+	}
+
+	if($data['userRole'] != 1) {
+	    echo "Доступ запрещён";
+	    exit;
+	}
+
+	$userId = $data['userId'];
 ?>
 <!DOCTYPE HTML>
 <html>
@@ -62,6 +68,7 @@
 					processData : false,
 					contentType : false, 
 					success: function (_data) {
+						console.log(_data);
 						location.reload();
 					},
 					error: function( ){

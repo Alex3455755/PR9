@@ -1,18 +1,25 @@
-<?php
-	session_start();
-	include("./settings/connect_datebase.php");
-	
-	if (isset($_SESSION['user'])) {
-		if($_SESSION['user'] == -1) {
-			header("Location: login.php");
-		} else {
-			// проверяем пользователя, если админ выкидываем на админа
-			$user_to_query = $mysqli->query("SELECT `roll` FROM `users` WHERE `id` = ".$_SESSION['user']);
-			$user_to_read = $user_to_query->fetch_row();
-			
-			if($user_to_read[0] == 1) header("Location: login.php");
-		}
- 	} else header("Location: login.php");
+<?php	
+include("./settings/connect_datebase.php");
+	include("ajax/check_token.php");
+
+	if(!isset($_COOKIE['JWT'])) {
+	    header("Location: login.php");
+	    exit;
+	}
+
+	$data = verifyJWT($_COOKIE['JWT']);
+
+	if(!$data) {
+	    header("Location: login.php");
+	    exit;
+	}
+
+	if($data['userRole'] == 1) {
+	    header("Location: admin.php");
+	    exit;
+	}
+
+	$userId = $data['userId'];
 	
 ?>
 <!DOCTYPE HTML>
@@ -44,7 +51,7 @@
 				<div class="name" style="padding-bottom: 0px;">Личный кабинет</div>
 				<div class="description">Добро пожаловать: 
 					<?php
-						$user_to_query = $mysqli->query("SELECT * FROM `users` WHERE `id` = ".$_SESSION['user']);
+						$user_to_query = $mysqli->query("SELECT * FROM `users` WHERE `id` = ".$userId);
 						$user_to_read = $user_to_query->fetch_row();
 						
 						echo $user_to_read[1];

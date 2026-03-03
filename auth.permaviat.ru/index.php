@@ -24,23 +24,30 @@ $SECRET_KEY = 'cAtwalkkEy';
 $query_user = $mysqli->query("SELECT * FROM `users` WHERE `login` = '$login'");
 if($read_user = $query_user->fetch_assoc()) {
    if(password_verify($password,$read_user['password'])){
-     # Создаём информацию как должна вычисляться JWT подпись
-    $header = array("typ" => "JWT", "alg" => "sha256");
-    # создаём полезные данные которые будут храниться в JWT
-    $payload = array(
-        "userId" => password_hash($read_user['id'], PASSWORD_DEFAULT),
-        "userRole" => password_hash($read_user['roll'], PASSWORD_DEFAULT),
-    );
+     function base64UrlEncode($data) {
+    return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');  // Правильный base64Url [web:21]
+}
 
-    # Генерируем секретный ключ
-    
-    # Токен пользователя из header + payload
-    $signedToken = base64_encode(json_encode($header)) . '.' . base64_encode(json_encode($payload));
-    # создаём сигнатуру при помощи алгоритма указанного в header signature
-    $signature = hash_hmac($header['alg'], $signedToken, $SECRET_KEY);
+function base64UrlDecode($data) {
+    return base64_decode(str_replace(['-', '_'], ['+', '/'], $data));
+}
 
-    $token = base64_encode(json_encode($header)) . '.' . base64_encode(json_encode($payload)) . '.' . base64_encode($signature);
-    header("token: " . $token);
+// В вашем коде:
+$header = json_encode(["typ" => "JWT", "alg" => "HS256"]);  // HS256, не sha256!
+$payload = json_encode([
+    "userId" => $read_user['id'],  // Без хэша!
+    "userRole" => $read_user['roll'],
+    "exp" => time() + 3600  // Добавьте срок!
+]);
+
+$headerEncoded = base64UrlEncode($header);
+$payloadEncoded = base64UrlEncode($payload);
+$signature = hash_hmac('sha256', $headerEncoded . '.' . $payloadEncoded, $SECRET_KEY, true);
+$signatureEncoded = base64UrlEncode($signature);
+
+$token = $headerEncoded . '.' . $payloadEncoded . '.' . $signatureEncoded;
+header("token: " . $token);
+
    }else{
     header('HTTP/1.0 401 Unauthorized');
    }

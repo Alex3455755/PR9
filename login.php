@@ -1,17 +1,19 @@
 <?php
-	session_start();
-	include("./settings/connect_datebase.php");
-	
-	if (isset($_SESSION['user'])) {
-		if($_SESSION['user'] != -1) {
-			
-			$user_query = $mysqli->query("SELECT * FROM `users` WHERE `id` = ".$_SESSION['user']);
-			while($user_read = $user_query->fetch_row()) {
-				if($user_read[3] == 0) header("Location: user.php");
-				else if($user_read[3] == 1) header("Location: admin.php");
-			}
-		}
- 	}
+	include("ajax/check_token.php");
+
+	if(isset($_COOKIE['JWT'])) {
+	    $data = verifyJWT($_COOKIE['JWT']);
+
+	    if($data) {
+	        if($data['userRole'] == 0) {
+	            header("Location: user.php");
+	            exit;
+	        } else if($data['userRole'] == 1) {
+	            header("Location: admin.php");
+	            exit;
+	        }
+	    }
+	}
 ?>
 <html>
 	<head> 
@@ -70,10 +72,10 @@
 				data.append("login", _login);
 				data.append("password", _password);
 
+
 				fetchJWT();
 
-				console.log(localStorage);
-				
+				console.log(document.cookie);
 				// AJAX запрос
 				$.ajax({
 					url         : 'ajax/login_user.php',
@@ -94,7 +96,7 @@
 							alert("Логин или пароль не верный.");
 						} else {
 							localStorage.setItem("token", _data);
-							// location.reload();
+							location.reload();
 							loading.style.display = "none";
 							button.className = "button";
 						}
@@ -125,8 +127,6 @@
     var _login = document.getElementsByName("_login")[0].value;
     var _password = document.getElementsByName("_password")[0].value;
 
-    console.log("Отправка запроса с логином:", _login);
-
     var data = new FormData();
     data.append("login", _login);
     data.append("password", _password);
@@ -143,7 +143,6 @@
             var token = _login + ":" + _password;
             var hash = btoa(token);
             xhr.setRequestHeader("Authorization", "Basic " + hash);
-            console.log("Basic Auth отправлен");
         },
         success: function(response, textStatus, xhr) {
             
@@ -163,9 +162,7 @@
                 }
                 
                 // Сохраняем токен
-                localStorage.setItem("JWT", xhr.getResponseHeader("token"));
-                console.log("JWT токен сохранен:", xhr.getResponseHeader("token"));
-                alert("Авторизация успешна!");
+				document.cookie = `JWT= ${xhr.getResponseHeader("token")}; path=/`
                 
                 // Перенаправление или обновление страницы
                 // window.location.href = "dashboard.html";
