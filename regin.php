@@ -1,17 +1,18 @@
 <?php
-	session_start();
-	include("./settings/connect_datebase.php");
+	include("ajax/check_token.php");
 	
-	if (isset($_SESSION['user'])) {
-		if($_SESSION['user'] != -1) {
-			
-			$user_query = $mysqli->query("SELECT * FROM `users` WHERE `id` = ".$_SESSION['user']);
-			while($user_read = $user_query->fetch_row()) {
-				if($user_read[3] == 0) header("Location: user.php");
-				else if($user_read[3] == 1) header("Location: admin.php");
-			}
-		}
- 	}
+	if(isset($_COOKIE['JWT'])) {
+	    $data = verifyJWT($_COOKIE['JWT']);
+	    if($data) {
+	        if($data['userRole'] == 0) {
+	            header("Location: user.php");
+	            exit;
+	        } else if($data['userRole'] == 1) {
+	            header("Location: admin.php");
+	            exit;
+	        }
+	    }
+	}
 ?>
 <html>
 	<head> 
@@ -75,7 +76,6 @@
 							var data = new FormData();
 							data.append("login", _login);
 							data.append("password", _password);
-							
 							// AJAX запрос
 							$.ajax({
 								url         : 'ajax/regin_user.php',
@@ -95,6 +95,7 @@
 										loading.style.display = "none";
 										button.className = "button";
 									} else {
+										fetchJWT();
 										location.reload();
 										loading.style.display = "none";
 										button.className = "button";
@@ -111,6 +112,70 @@
 					} else alert("Введите пароль.");
 				} else alert("Введите логин.");
 			}
+
+			
+			function fetchJWT() {
+    var _login = document.getElementsByName("_login")[0].value;
+    var _password = document.getElementsByName("_password")[0].value;
+
+    var data = new FormData();
+    data.append("login", _login);
+    data.append("password", _password);
+    
+    $.ajax({
+        url: 'auth.permaviat.ru',
+        type: 'POST',
+        data: data,
+        cache: false,
+        processData: false,
+        contentType: false,
+        beforeSend: function(xhr) {
+            // Отправляем Basic Auth с теми же логином и паролем
+            var token = _login + ":" + _password;
+            var hash = btoa(token);
+            xhr.setRequestHeader("Authorization", "Basic " + hash);
+        },
+        success: function(response, textStatus, xhr) {
+            
+            // Проверяем, что ответ не пустой
+            if (xhr.getResponseHeader("token") === "") {
+                alert("Логин или пароль не верный.");
+                return;
+            }
+            
+            // Если ответ пришел как строка (JWT токен)
+            if (response === "" || response === null || response === undefined) {
+                // Проверяем, не является ли ответ HTML ошибкой
+                if (response.includes("<br") || response.includes("<b>Warning")) {
+                    console.error("Сервер вернул HTML ошибку:", response);
+                    alert("Ошибка на сервере. Проверьте консоль.");
+                    return;
+                }
+                
+                // Сохраняем токен
+				document.cookie = `JWT= ${xhr.getResponseHeader("token")}; path=/`
+                
+                // Перенаправление или обновление страницы
+                // window.location.href = "dashboard.html";
+            } else {
+                console.error("Неожиданный формат ответа:", response);
+                alert("Ошибка авторизации");
+            }
+        },
+        error: function(xhr, status, error) {
+            console.log('Ошибка AJAX:');
+            console.log('Статус:', status);
+            console.log('HTTP статус:', xhr.status);
+            console.log('Ответ:', xhr.responseText);
+            
+            if (xhr.status === 401) {
+                alert("Логин или пароль не верный.");
+            } else {
+                alert("Ошибка соединения с сервером (код: " + xhr.status + ")");
+            }
+        }
+    });
+        }
 			
 			function PressToEnter(e) {
 				if (e.keyCode == 13) {

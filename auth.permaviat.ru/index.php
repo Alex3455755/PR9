@@ -1,5 +1,4 @@
 <?php
-// Извлекаем корень домена из пути к текущему файлу
 define('BASE_PATH', $_SERVER['DOCUMENT_ROOT']);
 require_once(BASE_PATH . '/security.permaviat.ruPR9/settings/connect_datebase.php');
 
@@ -25,19 +24,17 @@ $query_user = $mysqli->query("SELECT * FROM `users` WHERE `login` = '$login'");
 if($read_user = $query_user->fetch_assoc()) {
    if(password_verify($password,$read_user['password'])){
      function base64UrlEncode($data) {
-    return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');  // Правильный base64Url [web:21]
+    return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
 }
 
 function base64UrlDecode($data) {
     return base64_decode(str_replace(['-', '_'], ['+', '/'], $data));
 }
-
-// В вашем коде:
-$header = json_encode(["typ" => "JWT", "alg" => "HS256"]);  // HS256, не sha256!
+$header = json_encode(["typ" => "JWT", "alg" => "HS256"]);
 $payload = json_encode([
-    "userId" => $read_user['id'],  // Без хэша!
+    "userId" => $read_user['id'],
     "userRole" => $read_user['roll'],
-    "exp" => time() + 3600  // Добавьте срок!
+    "exp" => time() + 3600
 ]);
 
 $headerEncoded = base64UrlEncode($header);
