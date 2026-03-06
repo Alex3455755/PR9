@@ -1,8 +1,15 @@
 <?
     session_start();
 	include("../settings/connect_datebase.php");
+    include("check_token.php");
 
-    $IdUser = $_SESSION['user'];
+    if(isset($_COOKIE['JWT'])) {
+	    $data = verifyJWT($_COOKIE['JWT']);
+	    if($data) {
+	        $IdUser = $data['userId'];
+	    }
+	}
+    
     $Message = $_POST["Message"];
     $IdPost = $_POST["IdPost"];
 

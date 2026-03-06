@@ -5,7 +5,7 @@
 	$isAuth = false;
 	$userId = null;
 
-	if(isset($_COOKIE['token'])) {
+	if(isset($_COOKIE['JWT'])) {
 	    $data = verifyJWT($_COOKIE['JWT']);
 	    if($data) {
 	        $isAuth = true;
@@ -65,7 +65,7 @@
 											echo '</div>';
 
 											
-											if (isset($_SESSION['user'])) {
+											if (isset($_COOKIE['JWT'])) {
 												echo 
 													'<div class="messages" id="'.$read_news["id"].'">
 														<input type="text">

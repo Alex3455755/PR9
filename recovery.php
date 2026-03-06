@@ -1,16 +1,22 @@
-<?php
-	session_start();
-	if (isset($_SESSION['user'])) {
-		if($_SESSION['user'] != -1) {
-			include("./settings/connect_datebase.php");
-			
-			$user_query = $mysqli->query("SELECT * FROM `users` WHERE `id` = ".$_SESSION['user']);
-			while($user_read = $user_query->fetch_row()) {
-				if($user_read[3] == 0) header("Location: user.php");
-				else if($user_read[3] == 1) header("Location: admin.php");
-			}
-		}
- 	}
+<?php	
+include("./settings/connect_datebase.php");
+	include("ajax/check_token.php");
+	if(isset($_COOKIE["JWT"])){
+		$data = verifyJWT($_COOKIE['JWT']);
+
+	if($data) {
+	    header("Location: user.php");
+	    exit;
+	}
+
+	if($data['userRole'] == 1) {
+	    header("Location: admin.php");
+	    exit;
+	}
+
+	$userId = $data['userId'];
+	}
+	
 ?>
 <!DOCTYPE HTML>
 <html>
